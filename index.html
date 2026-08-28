@@ -8,6 +8,7 @@
   :root{
     --bg:#f4f5f7; --card:#fff; --accent:#2f6feb; --accent-dark:#1f4fb0;
     --text:#1c1e21; --sub:#6b7280; --border:#e3e5e8; --danger:#e05555;
+    --group:#0f9d76;
   }
   *{box-sizing:border-box;}
   body{
@@ -27,12 +28,14 @@
   .lbl{font-size:11px;color:var(--sub);font-weight:600;margin-bottom:6px;}
   .row{display:flex;flex-wrap:wrap;gap:6px;}
   .btn{
-    flex:1 1 auto;min-width:0;padding:9px 4px;border-radius:9px;
+    flex:1 1 auto;min-width:0;padding:9px 6px;border-radius:9px;
     border:1.5px solid var(--border);background:#fff;font-size:14px;
     color:var(--text);text-align:center;
   }
   .btn.sel{border-color:var(--accent);background:var(--accent);color:#fff;font-weight:600;}
   .btn.type{padding:11px 4px;font-size:15px;font-weight:600;}
+  .btn.grp{border-color:var(--group);color:var(--group);font-weight:600;}
+  .btn.grp.sel{background:var(--group);border-color:var(--group);color:#fff;}
   select,input[type=text],input[type=email]{
     padding:9px;border-radius:8px;border:1.5px solid var(--border);
     font-size:16px;background:#fff;color:var(--text);
@@ -56,11 +59,7 @@
   }
   .send:active{background:var(--accent-dark);}
   .hide{display:none !important;}
-  /* 設定パネル */
-  .overlay{
-    position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;
-    display:flex;align-items:flex-end;
-  }
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;display:flex;align-items:flex-end;}
   .panel{
     background:var(--bg);width:100%;max-height:88vh;overflow-y:auto;
     border-radius:16px 16px 0 0;padding:14px 14px calc(20px + env(safe-area-inset-bottom));
@@ -68,13 +67,25 @@
   .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
   .panel-head h2{font-size:16px;margin:0;}
   .close{border:none;background:none;font-size:22px;color:var(--sub);padding:4px 8px;}
-  .addr-row{display:flex;gap:6px;margin-bottom:6px;}
-  .addr-row input{flex:1;font-size:13px;padding:8px;}
-  .addr-row button{padding:0 10px;border:none;border-radius:8px;background:var(--danger);color:#fff;font-size:12px;}
+  .addr-row{display:flex;gap:6px;margin-bottom:6px;align-items:center;}
+  .addr-row input{flex:1;font-size:13px;padding:8px;min-width:0;}
+  .xbtn{padding:0 10px;height:34px;border:none;border-radius:8px;background:var(--danger);color:#fff;font-size:12px;flex:0 0 auto;}
   .dash{
     width:100%;padding:9px;border-radius:8px;border:1.5px dashed var(--border);
     background:#fafafa;color:var(--sub);font-size:13px;margin-top:4px;
   }
+  .gbox{
+    border:1.5px solid var(--group);border-radius:10px;padding:10px;margin-bottom:10px;background:#f7fdfb;
+  }
+  .ghead{display:flex;gap:6px;align-items:center;margin-bottom:8px;}
+  .ghead input{flex:1;font-weight:600;font-size:14px;}
+  .mem{
+    display:flex;justify-content:space-between;align-items:center;gap:6px;
+    background:#fff;border:1px solid var(--border);border-radius:8px;
+    padding:7px 9px;margin-bottom:5px;font-size:12.5px;
+  }
+  .mem span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mem button{border:none;background:none;color:var(--danger);font-size:16px;flex:0 0 auto;}
   textarea{
     width:100%;min-height:90px;padding:8px;border-radius:8px;
     border:1.5px solid var(--border);font-size:11px;font-family:monospace;
@@ -129,14 +140,10 @@
 </div>
 
 <div class="card">
-  <div class="row" style="align-items:center;">
-    <div class="lbl" style="flex:0 0 auto;margin:0 8px 0 0;">宛先</div>
-    <div id="toRow" class="row" style="flex:1;"></div>
-  </div>
-  <div id="ccWrap" class="row" style="align-items:center;margin-top:8px;">
-    <div class="lbl" style="flex:0 0 auto;margin:0 8px 0 0;">CC</div>
-    <div id="ccRow" class="row" style="flex:1;"></div>
-  </div>
+  <div class="lbl">宛先</div>
+  <div id="toRow" class="row"></div>
+  <div class="lbl" style="margin-top:9px;">CC</div>
+  <div id="ccRow" class="row"></div>
 </div>
 
 <div class="card">
@@ -154,7 +161,6 @@
   <button class="send" onclick="sendMail()">この内容でメールを開く</button>
 </div>
 
-<!-- 設定パネル -->
 <div class="overlay hide" id="overlay" onclick="if(event.target===this)closePanel()">
   <div class="panel">
     <div class="panel-head">
@@ -168,21 +174,27 @@
     </div>
 
     <div class="card">
-      <div class="lbl">宛先の登録</div>
+      <div class="lbl">宛先グループ（複数人へ一斉送信）</div>
+      <div id="groupManage"></div>
+      <button class="dash" onclick="addGroup()">＋ グループを新規作成</button>
+    </div>
+
+    <div class="card">
+      <div class="lbl">個別の宛先</div>
       <div id="addrManage"></div>
       <button class="dash" onclick="addAddr()">＋ 宛先を追加</button>
       <button class="dash" onclick="pickContacts('to')">📱 アドレス帳から選ぶ</button>
     </div>
 
     <div class="card">
-      <div class="lbl">CC宛先の登録</div>
+      <div class="lbl">CC宛先</div>
       <div id="ccManage"></div>
       <button class="dash" onclick="addCc()">＋ CC宛先を追加</button>
       <button class="dash" onclick="pickContacts('cc')">📱 アドレス帳から選ぶ</button>
     </div>
 
     <div class="card">
-      <div class="lbl">バックアップ（名前・宛先・CC）</div>
+      <div class="lbl">バックアップ（名前・宛先・グループ・CC）</div>
       <div class="row" style="margin-bottom:8px;">
         <button class="util" onclick="doExport()">エクスポート</button>
         <button class="util" onclick="doImport()">インポート</button>
@@ -196,13 +208,17 @@
 <script>
 let st = {
   type:"遅刻", reason:"理由なし", hour:"", minute:"",
-  addresses:[], selTo:[], ccAddresses:[], selCc:[],
+  addresses:[], selTo:[], groups:[], selGroups:[],
+  ccAddresses:[], selCc:[],
   name:"", event:"", apo:"あり"
 };
 
 /* ---- 保存 ---- */
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function saveAddr(){ lsSet('addresses', JSON.stringify(st.addresses)); }
+function saveCc(){ lsSet('ccAddresses', JSON.stringify(st.ccAddresses)); }
+function saveGroups(){ lsSet('groups', JSON.stringify(st.groups)); }
 
 function loadAll(){
   const n = lsGet('userName');
@@ -211,22 +227,33 @@ function loadAll(){
   if(!st.addresses.length) st.addresses = [{label:"宛先1", email:""}];
   st.selTo = [st.addresses[0]];
   try{ const c = lsGet('ccAddresses'); if(c) st.ccAddresses = JSON.parse(c); }catch(e){}
+  try{ const g = lsGet('groups'); if(g) st.groups = JSON.parse(g); }catch(e){}
   renderTo(); renderCc();
 }
-function saveAddr(){ lsSet('addresses', JSON.stringify(st.addresses)); }
-function saveCc(){ lsSet('ccAddresses', JSON.stringify(st.ccAddresses)); }
 
 /* ---- パネル ---- */
 function openPanel(){
   document.getElementById('overlay').classList.remove('hide');
-  renderAddrManage(); renderCcManage();
+  renderAddrManage(); renderCcManage(); renderGroupManage();
 }
 function closePanel(){ document.getElementById('overlay').classList.add('hide'); }
 
-/* ---- 宛先（メイン画面の選択ボタン） ---- */
+/* ---- メイン画面：宛先 ---- */
 function renderTo(){
   const w = document.getElementById('toRow');
   w.innerHTML = '';
+  st.groups.forEach(g=>{
+    const on = st.selGroups.includes(g);
+    const b = document.createElement('button');
+    b.className = 'btn grp' + (on ? ' sel' : '');
+    const cnt = g.members.filter(m=>m.email).length;
+    b.textContent = '👥 ' + (g.name || 'グループ') + ' (' + cnt + ')';
+    b.onclick = ()=>{
+      if(on) st.selGroups = st.selGroups.filter(x=>x!==g); else st.selGroups.push(g);
+      renderTo();
+    };
+    w.appendChild(b);
+  });
   st.addresses.forEach(a=>{
     const on = st.selTo.includes(a);
     const b = document.createElement('button');
@@ -238,19 +265,6 @@ function renderTo(){
     };
     w.appendChild(b);
   });
-  if(st.addresses.length > 1){
-    const valid = st.addresses.filter(a=>a.email);
-    const allOn = valid.length > 0 && valid.every(a=>st.selTo.includes(a));
-    const ab = document.createElement('button');
-    ab.className = 'btn' + (allOn ? ' sel' : '');
-    ab.style.fontWeight = '700';
-    ab.textContent = allOn ? '全員 解除' : '全員';
-    ab.onclick = ()=>{
-      st.selTo = allOn ? [] : valid.slice();
-      renderTo();
-    };
-    w.appendChild(ab);
-  }
   update();
 }
 function renderCc(){
@@ -274,7 +288,111 @@ function renderCc(){
   update();
 }
 
-/* ---- 宛先編集（パネル内） ---- */
+/* ---- グループ管理 ---- */
+function renderGroupManage(){
+  const w = document.getElementById('groupManage');
+  w.innerHTML = '';
+  if(!st.groups.length){
+    w.innerHTML = '<div style="font-size:12px;color:var(--sub);padding:4px 0;">グループは未作成です。</div>';
+    return;
+  }
+  st.groups.forEach((g,gi)=>{
+    const box = document.createElement('div');
+    box.className = 'gbox';
+
+    const head = document.createElement('div');
+    head.className = 'ghead';
+    const nameIn = document.createElement('input');
+    nameIn.type = 'text';
+    nameIn.placeholder = 'グループ名（例：課内）';
+    nameIn.value = g.name || '';
+    nameIn.addEventListener('input', e=>{
+      g.name = e.target.value; saveGroups(); renderTo();
+    });
+    const delB = document.createElement('button');
+    delB.className = 'xbtn';
+    delB.textContent = '削除';
+    delB.onclick = ()=>{
+      if(!confirm('グループ「'+(g.name||'')+'」を削除しますか？')) return;
+      st.selGroups = st.selGroups.filter(x=>x!==g);
+      st.groups.splice(gi,1);
+      saveGroups(); renderGroupManage(); renderTo();
+    };
+    head.appendChild(nameIn); head.appendChild(delB);
+    box.appendChild(head);
+
+    if(!g.members.length){
+      const e = document.createElement('div');
+      e.style.cssText = 'font-size:12px;color:var(--sub);margin-bottom:6px;';
+      e.textContent = 'メンバーがいません。下のボタンで追加してください。';
+      box.appendChild(e);
+    }
+    g.members.forEach((m,mi)=>{
+      const row = document.createElement('div');
+      row.className = 'mem';
+      const s = document.createElement('span');
+      s.textContent = (m.label || '') + '　' + (m.email || '(未設定)');
+      const x = document.createElement('button');
+      x.textContent = '✕';
+      x.onclick = ()=>{ g.members.splice(mi,1); saveGroups(); renderGroupManage(); renderTo(); };
+      row.appendChild(s); row.appendChild(x);
+      box.appendChild(row);
+    });
+
+    const pick = document.createElement('button');
+    pick.className = 'dash';
+    pick.textContent = '📱 アドレス帳から複数選ぶ';
+    pick.onclick = ()=> pickForGroup(g);
+    box.appendChild(pick);
+
+    const man = document.createElement('button');
+    man.className = 'dash';
+    man.textContent = '＋ 手入力で追加';
+    man.onclick = ()=>{
+      const em = prompt('メールアドレスを入力してください');
+      if(!em) return;
+      const nm = prompt('表示名（省略可）') || em.split('@')[0];
+      g.members.push({label:nm, email:em.trim()});
+      saveGroups(); renderGroupManage(); renderTo();
+    };
+    box.appendChild(man);
+
+    w.appendChild(box);
+  });
+}
+function addGroup(){
+  const nm = prompt('グループ名を入力してください（例：課内）');
+  if(nm === null) return;
+  st.groups.push({name: nm || 'グループ'+(st.groups.length+1), members:[]});
+  saveGroups(); renderGroupManage(); renderTo();
+}
+async function pickForGroup(g){
+  if(!('contacts' in navigator) || !('ContactsManager' in window)){
+    alert('この端末・ブラウザではアドレス帳を呼び出せません。「手入力で追加」をご利用ください。');
+    return;
+  }
+  try{
+    const cs = await navigator.contacts.select(['name','email'], {multiple:true});
+    if(!cs || !cs.length) return;
+    let added = 0;
+    cs.forEach(c=>{
+      const label = (c.name && c.name[0]) ? c.name[0] : 'アドレス帳';
+      const emails = (c.email && c.email.length) ? c.email : [];
+      emails.slice(0,1).forEach(em=>{
+        if(!em) return;
+        if(g.members.some(m=>m.email === em)) return;
+        g.members.push({label, email:em});
+        added++;
+      });
+    });
+    saveGroups(); renderGroupManage(); renderTo();
+    if(added === 0) alert('メールアドレスが登録された連絡先が選ばれませんでした。');
+  }catch(e){
+    alert('アドレス帳の読み込みに失敗しました。');
+  }
+}
+
+/* ---- 個別宛先・CC管理 ---- */
 function renderAddrManage(){
   const w = document.getElementById('addrManage');
   w.innerHTML = '';
@@ -284,7 +402,7 @@ function renderAddrManage(){
     r.innerHTML =
       '<input type="text" placeholder="名称" value="'+a.label.replace(/"/g,'&quot;')+'" data-i="'+i+'" data-f="label">'+
       '<input type="email" placeholder="メールアドレス" value="'+a.email.replace(/"/g,'&quot;')+'" data-i="'+i+'" data-f="email">'+
-      '<button onclick="delAddr('+i+')">×</button>';
+      '<button class="xbtn" onclick="delAddr('+i+')">✕</button>';
     w.appendChild(r);
   });
   w.querySelectorAll('input').forEach(inp=>{
@@ -302,7 +420,6 @@ function delAddr(i){
   st.addresses.splice(i,1);
   if(!st.addresses.length) st.addresses.push({label:"宛先1", email:""});
   st.selTo = st.selTo.filter(x=>st.addresses.includes(x));
-  if(!st.selTo.length) st.selTo = [st.addresses[0]];
   saveAddr(); renderAddrManage(); renderTo();
 }
 function renderCcManage(){
@@ -314,7 +431,7 @@ function renderCcManage(){
     r.innerHTML =
       '<input type="text" placeholder="名称" value="'+a.label.replace(/"/g,'&quot;')+'" data-i="'+i+'" data-f="label">'+
       '<input type="email" placeholder="メールアドレス" value="'+a.email.replace(/"/g,'&quot;')+'" data-i="'+i+'" data-f="email">'+
-      '<button onclick="delCc('+i+')">×</button>';
+      '<button class="xbtn" onclick="delCc('+i+')">✕</button>';
     w.appendChild(r);
   });
   w.querySelectorAll('input').forEach(inp=>{
@@ -334,22 +451,20 @@ function delCc(i){
   st.selCc = st.selCc.filter(x=>x!==rm);
   saveCc(); renderCcManage(); renderCc();
 }
-
-/* ---- アドレス帳 ---- */
 async function pickContacts(target){
   if(!('contacts' in navigator) || !('ContactsManager' in window)){
     alert('この端末・ブラウザではアドレス帳を呼び出せません。手動で入力してください。');
     return;
   }
   try{
-    const cs = await navigator.contacts.select(['name','email'], {multiple: target==='cc'});
+    const cs = await navigator.contacts.select(['name','email'], {multiple:true});
     if(!cs || !cs.length) return;
     cs.forEach(c=>{
       const label = (c.name && c.name[0]) ? c.name[0] : 'アドレス帳';
       const email = (c.email && c.email[0]) ? c.email[0] : '';
       if(!email) return;
-      if(target==='to'){ st.addresses.push({label,email}); }
-      else { st.ccAddresses.push({label,email}); }
+      if(target==='to') st.addresses.push({label,email});
+      else st.ccAddresses.push({label,email});
     });
     if(target==='to'){ saveAddr(); renderAddrManage(); renderTo(); }
     else { saveCc(); renderCcManage(); renderCc(); }
@@ -361,7 +476,8 @@ async function pickContacts(target){
 /* ---- バックアップ ---- */
 function doExport(){
   document.getElementById('ioBox').value = JSON.stringify({
-    version:1, name:st.name, addresses:st.addresses, ccAddresses:st.ccAddresses
+    version:2, name:st.name, addresses:st.addresses,
+    groups:st.groups, ccAddresses:st.ccAddresses
   });
   alert('書き出しました。下のテキストをコピーして保管してください。');
 }
@@ -378,10 +494,13 @@ function doImport(){
   if(Array.isArray(d.addresses) && d.addresses.length){
     st.addresses = d.addresses; st.selTo = [st.addresses[0]]; saveAddr();
   }
+  if(Array.isArray(d.groups)){
+    st.groups = d.groups; st.selGroups = []; saveGroups();
+  }
   if(Array.isArray(d.ccAddresses)){
     st.ccAddresses = d.ccAddresses; st.selCc = []; saveCc();
   }
-  renderAddrManage(); renderCcManage(); renderTo(); renderCc();
+  renderAddrManage(); renderCcManage(); renderGroupManage(); renderTo(); renderCc();
   alert('復元しました。');
 }
 function copyBox(){
@@ -431,6 +550,16 @@ function timeStr(){
   return st.hour + ':' + String(st.minute).padStart(2,'0');
 }
 
+/* ---- 宛先集約 ---- */
+function toEmails(){
+  const list = [];
+  st.selGroups.forEach(g=>{
+    g.members.forEach(m=>{ if(m.email) list.push(m.email); });
+  });
+  st.selTo.forEach(a=>{ if(a.email) list.push(a.email); });
+  return list.filter((v,i)=>list.indexOf(v)===i);
+}
+
 /* ---- 本文 ---- */
 function body(){
   const t = timeStr();
@@ -453,22 +582,24 @@ function subject(){
   return st.type==='遅刻' ? '遅刻のご連絡' : (st.type==='欠勤' ? '欠勤のご連絡' : '欠席のご連絡');
 }
 function update(){
-  const toList = st.selTo.map(a=>a.email).filter(Boolean);
-  const to = toList.length ? toList.join(', ') : '（未設定）';
+  const tl = toEmails();
+  let to;
+  if(!tl.length) to = '（未選択）';
+  else if(tl.length <= 3) to = tl.join(', ');
+  else to = tl.slice(0,2).join(', ') + ' ほか' + (tl.length-2) + '名（計' + tl.length + '名）';
   const cc = st.selCc.map(c=>c.email).filter(Boolean).join(', ');
   document.getElementById('preview').innerHTML =
-    '<b>宛先：</b>'+to+'　<b>CC：</b>'+(cc||'なし')+'\n<b>件名：</b>'+subject()+'\n\n'+body();
+    '<b>宛先：</b>'+to+'\n<b>CC：</b>'+(cc||'なし')+'\n<b>件名：</b>'+subject()+'\n\n'+body();
 }
 
 /* ---- 送信 ---- */
 function sendMail(){
-  const toList = st.selTo.map(a=>a.email).filter(Boolean);
-  if(!toList.length){ alert('宛先が選択されていません。右上の⋯から登録し、宛先を選んでください。'); openPanel(); return; }
-  const to = toList.join(',');
+  const tl = toEmails();
+  if(!tl.length){ alert('宛先が選択されていません。右上の⋯から登録し、宛先またはグループを選んでください。'); openPanel(); return; }
   if(st.type==='遅刻' && (st.hour===''||st.minute==='')){ alert('出社予定時刻を選択してください。'); return; }
   const cc = st.selCc.map(c=>c.email).filter(Boolean);
   const ccP = cc.length ? '&cc='+encodeURIComponent(cc.join(',')) : '';
-  window.location.href = 'mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subject())+ccP+'&body='+encodeURIComponent(body());
+  window.location.href = 'mailto:'+encodeURIComponent(tl.join(','))+'?subject='+encodeURIComponent(subject())+ccP+'&body='+encodeURIComponent(body());
 }
 
 /* ---- 起動 ---- */
