@@ -196,7 +196,7 @@
 <script>
 let st = {
   type:"遅刻", reason:"理由なし", hour:"", minute:"",
-  addresses:[], selAddr:null, ccAddresses:[], selCc:[],
+  addresses:[], selTo:[], ccAddresses:[], selCc:[],
   name:"", event:"", apo:"あり"
 };
 
@@ -209,7 +209,7 @@ function loadAll(){
   if(n){ st.name = n; document.getElementById('nameInput').value = n; }
   try{ const a = lsGet('addresses'); if(a) st.addresses = JSON.parse(a); }catch(e){}
   if(!st.addresses.length) st.addresses = [{label:"宛先1", email:""}];
-  st.selAddr = st.addresses[0];
+  st.selTo = [st.addresses[0]];
   try{ const c = lsGet('ccAddresses'); if(c) st.ccAddresses = JSON.parse(c); }catch(e){}
   renderTo(); renderCc();
 }
@@ -228,12 +228,29 @@ function renderTo(){
   const w = document.getElementById('toRow');
   w.innerHTML = '';
   st.addresses.forEach(a=>{
+    const on = st.selTo.includes(a);
     const b = document.createElement('button');
-    b.className = 'btn' + (st.selAddr === a ? ' sel' : '');
+    b.className = 'btn' + (on ? ' sel' : '');
     b.textContent = a.label + (a.email ? '' : '(未)');
-    b.onclick = ()=>{ st.selAddr = a; renderTo(); };
+    b.onclick = ()=>{
+      if(on) st.selTo = st.selTo.filter(x=>x!==a); else st.selTo.push(a);
+      renderTo();
+    };
     w.appendChild(b);
   });
+  if(st.addresses.length > 1){
+    const valid = st.addresses.filter(a=>a.email);
+    const allOn = valid.length > 0 && valid.every(a=>st.selTo.includes(a));
+    const ab = document.createElement('button');
+    ab.className = 'btn' + (allOn ? ' sel' : '');
+    ab.style.fontWeight = '700';
+    ab.textContent = allOn ? '全員 解除' : '全員';
+    ab.onclick = ()=>{
+      st.selTo = allOn ? [] : valid.slice();
+      renderTo();
+    };
+    w.appendChild(ab);
+  }
   update();
 }
 function renderCc(){
@@ -284,7 +301,8 @@ function addAddr(){
 function delAddr(i){
   st.addresses.splice(i,1);
   if(!st.addresses.length) st.addresses.push({label:"宛先1", email:""});
-  if(!st.addresses.includes(st.selAddr)) st.selAddr = st.addresses[0];
+  st.selTo = st.selTo.filter(x=>st.addresses.includes(x));
+  if(!st.selTo.length) st.selTo = [st.addresses[0]];
   saveAddr(); renderAddrManage(); renderTo();
 }
 function renderCcManage(){
@@ -358,7 +376,7 @@ function doImport(){
     lsSet('userName', d.name);
   }
   if(Array.isArray(d.addresses) && d.addresses.length){
-    st.addresses = d.addresses; st.selAddr = st.addresses[0]; saveAddr();
+    st.addresses = d.addresses; st.selTo = [st.addresses[0]]; saveAddr();
   }
   if(Array.isArray(d.ccAddresses)){
     st.ccAddresses = d.ccAddresses; st.selCc = []; saveCc();
@@ -435,7 +453,8 @@ function subject(){
   return st.type==='遅刻' ? '遅刻のご連絡' : (st.type==='欠勤' ? '欠勤のご連絡' : '欠席のご連絡');
 }
 function update(){
-  const to = st.selAddr ? (st.selAddr.email || '（未設定）') : '（未設定）';
+  const toList = st.selTo.map(a=>a.email).filter(Boolean);
+  const to = toList.length ? toList.join(', ') : '（未設定）';
   const cc = st.selCc.map(c=>c.email).filter(Boolean).join(', ');
   document.getElementById('preview').innerHTML =
     '<b>宛先：</b>'+to+'　<b>CC：</b>'+(cc||'なし')+'\n<b>件名：</b>'+subject()+'\n\n'+body();
@@ -443,8 +462,9 @@ function update(){
 
 /* ---- 送信 ---- */
 function sendMail(){
-  const to = st.selAddr ? st.selAddr.email : '';
-  if(!to){ alert('宛先が未設定です。右上の⋯から登録してください。'); openPanel(); return; }
+  const toList = st.selTo.map(a=>a.email).filter(Boolean);
+  if(!toList.length){ alert('宛先が選択されていません。右上の⋯から登録し、宛先を選んでください。'); openPanel(); return; }
+  const to = toList.join(',');
   if(st.type==='遅刻' && (st.hour===''||st.minute==='')){ alert('出社予定時刻を選択してください。'); return; }
   const cc = st.selCc.map(c=>c.email).filter(Boolean);
   const ccP = cc.length ? '&cc='+encodeURIComponent(cc.join(',')) : '';
