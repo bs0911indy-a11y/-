@@ -6,538 +6,461 @@
 <title>遅刻・欠勤・欠席連絡</title>
 <style>
   :root{
-    --bg:#f4f5f7;
-    --card:#ffffff;
-    --accent:#2f6feb;
-    --accent-dark:#1f4fb0;
-    --text:#1c1e21;
-    --sub:#6b7280;
-    --border:#e3e5e8;
-    --danger:#e05555;
+    --bg:#f4f5f7; --card:#fff; --accent:#2f6feb; --accent-dark:#1f4fb0;
+    --text:#1c1e21; --sub:#6b7280; --border:#e3e5e8; --danger:#e05555;
   }
   *{box-sizing:border-box;}
   body{
-    margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
-    background:var(--bg);
-    color:var(--text);
-    padding:16px;
-    padding-bottom:100px;
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
+    background:var(--bg); color:var(--text); padding:10px 12px 84px;
   }
-  h1{font-size:20px;margin:8px 0 16px;text-align:center;}
-  .section{
-    background:var(--card);
-    border-radius:14px;
-    padding:16px;
-    margin-bottom:14px;
-    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .topbar h1{font-size:17px;margin:0;}
+  .dots{
+    width:38px;height:38px;border-radius:10px;border:1.5px solid var(--border);
+    background:#fff;font-size:19px;line-height:1;color:var(--sub);
   }
-  .section-title{
-    font-size:13px;color:var(--sub);margin-bottom:10px;font-weight:600;
+  .card{
+    background:var(--card);border-radius:12px;padding:10px 12px;margin-bottom:8px;
+    box-shadow:0 1px 2px rgba(0,0,0,0.05);
   }
-  .btn-grid{display:flex;flex-wrap:wrap;gap:8px;}
-  .choice-btn{
-    flex:1 1 auto;min-width:70px;padding:12px 10px;border-radius:10px;
-    border:1.5px solid var(--border);background:#fff;font-size:15px;
-    color:var(--text);cursor:pointer;text-align:center;transition:all .12s ease;
+  .lbl{font-size:11px;color:var(--sub);font-weight:600;margin-bottom:6px;}
+  .row{display:flex;flex-wrap:wrap;gap:6px;}
+  .btn{
+    flex:1 1 auto;min-width:0;padding:9px 4px;border-radius:9px;
+    border:1.5px solid var(--border);background:#fff;font-size:14px;
+    color:var(--text);text-align:center;
   }
-  .choice-btn.selected{
-    border-color:var(--accent);background:var(--accent);color:#fff;font-weight:600;
-  }
-  .type-toggle{display:flex;gap:8px;}
-  .type-toggle .choice-btn{padding:14px 4px;font-size:16px;font-weight:600;}
-  select, input[type=text], input[type=email]{
-    padding:12px;border-radius:8px;border:1.5px solid var(--border);
+  .btn.sel{border-color:var(--accent);background:var(--accent);color:#fff;font-weight:600;}
+  .btn.type{padding:11px 4px;font-size:15px;font-weight:600;}
+  select,input[type=text],input[type=email]{
+    padding:9px;border-radius:8px;border:1.5px solid var(--border);
     font-size:16px;background:#fff;color:var(--text);
   }
-  .time-row{display:flex;align-items:center;gap:10px;justify-content:center;}
+  .time-row{display:flex;align-items:center;gap:8px;}
   .time-row select{flex:1;text-align:center;}
-  .time-colon{font-size:22px;font-weight:700;color:var(--accent-dark);}
-  .addr-row{display:flex;gap:8px;margin-bottom:8px;}
-  .addr-row input{flex:1;font-size:14px;padding:10px;}
-  .addr-row button{
-    padding:0 12px;border:none;border-radius:8px;
-    background:var(--danger);color:#fff;font-size:13px;
-  }
-  .add-addr-btn{
-    width:100%;padding:10px;border-radius:8px;border:1.5px dashed var(--border);
-    background:#fafafa;color:var(--sub);font-size:14px;margin-top:4px;
-  }
-  .preview-box{
+  .colon{font-size:18px;font-weight:700;color:var(--accent-dark);}
+  .preview{
     background:#fafbfc;border:1px solid var(--border);border-radius:10px;
-    padding:12px;font-size:13px;color:var(--sub);white-space:pre-wrap;line-height:1.6;
+    padding:10px;font-size:12.5px;color:var(--sub);white-space:pre-wrap;line-height:1.55;
   }
-  .preview-box b{color:var(--text);}
-  .send-bar{
+  .preview b{color:var(--text);}
+  .sendbar{
     position:fixed;bottom:0;left:0;right:0;
-    padding:14px 16px calc(14px + env(safe-area-inset-bottom));
-    background:linear-gradient(to top, var(--bg) 60%, transparent);
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top,var(--bg) 65%,transparent);
   }
-  .send-btn{
-    width:100%;padding:16px;border:none;border-radius:14px;
-    background:var(--accent);color:#fff;font-size:17px;font-weight:700;
-    box-shadow:0 3px 10px rgba(47,111,235,0.35);
+  .send{
+    width:100%;padding:15px;border:none;border-radius:13px;background:var(--accent);
+    color:#fff;font-size:16px;font-weight:700;box-shadow:0 3px 10px rgba(47,111,235,.35);
   }
-  .send-btn:active{background:var(--accent-dark);}
-  .hidden{display:none !important;}
-  .other-toggle{
-    background:none;border:none;color:var(--accent);font-size:13px;padding:6px 0;
+  .send:active{background:var(--accent-dark);}
+  .hide{display:none !important;}
+  /* 設定パネル */
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;
+    display:flex;align-items:flex-end;
+  }
+  .panel{
+    background:var(--bg);width:100%;max-height:88vh;overflow-y:auto;
+    border-radius:16px 16px 0 0;padding:14px 14px calc(20px + env(safe-area-inset-bottom));
+  }
+  .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .panel-head h2{font-size:16px;margin:0;}
+  .close{border:none;background:none;font-size:22px;color:var(--sub);padding:4px 8px;}
+  .addr-row{display:flex;gap:6px;margin-bottom:6px;}
+  .addr-row input{flex:1;font-size:13px;padding:8px;}
+  .addr-row button{padding:0 10px;border:none;border-radius:8px;background:var(--danger);color:#fff;font-size:12px;}
+  .dash{
+    width:100%;padding:9px;border-radius:8px;border:1.5px dashed var(--border);
+    background:#fafafa;color:var(--sub);font-size:13px;margin-top:4px;
   }
   textarea{
-    width:100%;min-height:110px;padding:10px;border-radius:8px;
-    border:1.5px solid var(--border);font-size:12px;font-family:monospace;
+    width:100%;min-height:90px;padding:8px;border-radius:8px;
+    border:1.5px solid var(--border);font-size:11px;font-family:monospace;
   }
-  .util-btn{
-    flex:1;padding:12px;border-radius:8px;border:1.5px solid var(--accent);
-    background:#fff;color:var(--accent);font-size:14px;font-weight:600;
+  .util{
+    flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--accent);
+    background:#fff;color:var(--accent);font-size:13px;font-weight:600;
   }
 </style>
 </head>
 <body>
 
-<h1>遅刻・欠勤・欠席連絡</h1>
+<div class="topbar">
+  <h1>遅刻・欠勤・欠席連絡</h1>
+  <button class="dots" onclick="openPanel()">⋯</button>
+</div>
 
-<div class="section">
-  <div class="section-title">種別</div>
-  <div class="type-toggle">
-    <button class="choice-btn selected" data-type="遅刻" onclick="selectType('遅刻')">遅刻</button>
-    <button class="choice-btn" data-type="欠勤" onclick="selectType('欠勤')">欠勤</button>
-    <button class="choice-btn" data-type="欠席" onclick="selectType('欠席')">欠席</button>
+<div class="card">
+  <div class="row">
+    <button class="btn type sel" data-type="遅刻" onclick="selType('遅刻')">遅刻</button>
+    <button class="btn type" data-type="欠勤" onclick="selType('欠勤')">欠勤</button>
+    <button class="btn type" data-type="欠席" onclick="selType('欠席')">欠席</button>
   </div>
 </div>
 
-<div class="section">
-  <div class="section-title">お名前（冒頭の挨拶に使用）</div>
-  <input type="text" id="nameInput" placeholder="例：山田" style="width:100%;">
-</div>
-
-<div class="section">
-  <div class="section-title">宛先</div>
-  <div id="addrButtons" class="btn-grid"></div>
-  <div id="addrManage" style="margin-top:12px;"></div>
-  <button class="add-addr-btn" onclick="showAddAddr()">＋ 宛先を追加・編集</button>
-  <button class="add-addr-btn" onclick="pickFromContacts('to')" style="margin-top:6px;">📱 アドレス帳から選ぶ</button>
-</div>
-
-<div class="section">
-  <div class="section-title">CC（複数選択可・任意）</div>
-  <div id="ccButtons" class="btn-grid"></div>
-  <div id="ccManage" style="margin-top:12px;"></div>
-  <button class="add-addr-btn" onclick="showAddCc()">＋ CC宛先を追加・編集</button>
-  <button class="add-addr-btn" onclick="pickFromContacts('cc')" style="margin-top:6px;">📱 アドレス帳から選ぶ</button>
-</div>
-
-<div class="section">
-  <div class="section-title">理由</div>
-  <div class="btn-grid">
-    <button class="choice-btn selected" data-reason="理由なし" onclick="selectReason('理由なし')">理由なし</button>
-    <button class="choice-btn" data-reason="私用" onclick="selectReason('私用')">私用</button>
-    <button class="choice-btn" data-reason="体調不良" onclick="selectReason('体調不良')">体調不良</button>
+<div class="card">
+  <div class="lbl">理由</div>
+  <div class="row" style="margin-bottom:6px;">
+    <button class="btn sel" data-reason="理由なし" onclick="selReason('理由なし')">なし</button>
+    <button class="btn" data-reason="私用" onclick="selReason('私用')">私用</button>
+    <button class="btn" data-reason="体調不良" onclick="selReason('体調不良')">体調不良</button>
   </div>
-  <button class="other-toggle" onclick="toggleOther()">その他の理由を表示 ▾</button>
-  <div id="otherReasons" class="btn-grid hidden" style="margin-top:8px;">
-    <button class="choice-btn" data-reason="電車遅延" onclick="selectReason('電車遅延')">電車遅延</button>
-    <button class="choice-btn" data-reason="通院" onclick="selectReason('通院')">通院</button>
-    <button class="choice-btn" data-reason="家庭の事情" onclick="selectReason('家庭の事情')">家庭の事情</button>
-    <button class="choice-btn" data-reason="交通渋滞" onclick="selectReason('交通渋滞')">交通渋滞</button>
+  <div class="row">
+    <button class="btn" data-reason="電車遅延" onclick="selReason('電車遅延')">電車遅延</button>
+    <button class="btn" data-reason="通院" onclick="selReason('通院')">通院</button>
+    <button class="btn" data-reason="家庭の事情" onclick="selReason('家庭の事情')">家庭の事情</button>
   </div>
 </div>
 
-<div class="section" id="timeSection">
-  <div class="section-title">出社予定時刻</div>
+<div class="card" id="timeCard">
+  <div class="lbl">出社予定時刻</div>
   <div class="time-row">
-    <select id="hourSelect"></select>
-    <span class="time-colon">:</span>
-    <select id="minSelect"></select>
+    <select id="hourSel"></select>
+    <span class="colon">:</span>
+    <select id="minSel"></select>
   </div>
 </div>
 
-<div class="section hidden" id="eventSection">
-  <div class="section-title">欠席する会議・行事名（任意）</div>
+<div class="card hide" id="eventCard">
+  <div class="lbl">欠席する会議・行事名（任意）</div>
   <input type="text" id="eventInput" placeholder="例：定例会議" style="width:100%;">
 </div>
 
-<div class="section">
-  <div class="section-title">謝罪の一文</div>
-  <div class="btn-grid">
-    <button class="choice-btn selected" data-apology="あり" onclick="selectApology('あり')">謝罪あり</button>
-    <button class="choice-btn" data-apology="なし" onclick="selectApology('なし')">謝罪なし</button>
+<div class="card">
+  <div class="row" style="align-items:center;">
+    <div class="lbl" style="flex:0 0 auto;margin:0 8px 0 0;">宛先</div>
+    <div id="toRow" class="row" style="flex:1;"></div>
+  </div>
+  <div id="ccWrap" class="row" style="align-items:center;margin-top:8px;">
+    <div class="lbl" style="flex:0 0 auto;margin:0 8px 0 0;">CC</div>
+    <div id="ccRow" class="row" style="flex:1;"></div>
   </div>
 </div>
 
-<div class="section">
-  <div class="section-title">プレビュー</div>
-  <div class="preview-box" id="preview"></div>
-</div>
-
-<div class="section">
-  <div class="section-title">設定のバックアップ（名前・宛先・CC）</div>
-  <div style="display:flex;gap:8px;margin-bottom:10px;">
-    <button class="util-btn" onclick="exportSettings()">エクスポート</button>
-    <button class="util-btn" onclick="importSettings()">インポート</button>
+<div class="card">
+  <div class="row">
+    <button class="btn sel" data-apo="あり" onclick="selApo('あり')">謝罪あり</button>
+    <button class="btn" data-apo="なし" onclick="selApo('なし')">謝罪なし</button>
   </div>
-  <textarea id="ioBox" placeholder="「エクスポート」を押すとここに設定が表示されます。&#10;このテキストを控えておき、差し替え後に貼り付けて「インポート」を押すと復元できます。"></textarea>
-  <button class="add-addr-btn" onclick="copyBox()">📋 上のテキストをコピー</button>
 </div>
 
-<div class="send-bar">
-  <button class="send-btn" onclick="sendMail()">この内容でメールを開く</button>
+<div class="card">
+  <div class="preview" id="preview"></div>
+</div>
+
+<div class="sendbar">
+  <button class="send" onclick="sendMail()">この内容でメールを開く</button>
+</div>
+
+<!-- 設定パネル -->
+<div class="overlay hide" id="overlay" onclick="if(event.target===this)closePanel()">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>設定</h2>
+      <button class="close" onclick="closePanel()">✕</button>
+    </div>
+
+    <div class="card">
+      <div class="lbl">お名前（冒頭の挨拶に使用）</div>
+      <input type="text" id="nameInput" placeholder="例：山田" style="width:100%;">
+    </div>
+
+    <div class="card">
+      <div class="lbl">宛先の登録</div>
+      <div id="addrManage"></div>
+      <button class="dash" onclick="addAddr()">＋ 宛先を追加</button>
+      <button class="dash" onclick="pickContacts('to')">📱 アドレス帳から選ぶ</button>
+    </div>
+
+    <div class="card">
+      <div class="lbl">CC宛先の登録</div>
+      <div id="ccManage"></div>
+      <button class="dash" onclick="addCc()">＋ CC宛先を追加</button>
+      <button class="dash" onclick="pickContacts('cc')">📱 アドレス帳から選ぶ</button>
+    </div>
+
+    <div class="card">
+      <div class="lbl">バックアップ（名前・宛先・CC）</div>
+      <div class="row" style="margin-bottom:8px;">
+        <button class="util" onclick="doExport()">エクスポート</button>
+        <button class="util" onclick="doImport()">インポート</button>
+      </div>
+      <textarea id="ioBox" placeholder="「エクスポート」で設定がここに出ます。控えておき、復元時は貼り付けて「インポート」。"></textarea>
+      <button class="dash" onclick="copyBox()">📋 コピー</button>
+    </div>
+  </div>
 </div>
 
 <script>
-let state = {
-  type: "遅刻",
-  reason: "理由なし",
-  hour: "",
-  minute: "",
-  addresses: [],
-  selectedAddr: null,
-  ccAddresses: [],
-  selectedCc: [],
-  name: "",
-  event: "",
-  apology: "あり"
+let st = {
+  type:"遅刻", reason:"理由なし", hour:"", minute:"",
+  addresses:[], selAddr:null, ccAddresses:[], selCc:[],
+  name:"", event:"", apo:"あり"
 };
 
-/* ---------- 保存・読み込み ---------- */
-function loadName(){
-  try{
-    const v = localStorage.getItem('userName');
-    if(v){ state.name = v; document.getElementById('nameInput').value = v; }
-  }catch(e){}
-}
-function saveName(v){
-  state.name = v;
-  try{ localStorage.setItem('userName', v); }catch(e){}
-  updatePreview();
-}
-function loadAddresses(){
-  try{
-    const v = localStorage.getItem('addresses');
-    if(v){ state.addresses = JSON.parse(v); }
-  }catch(e){ state.addresses = []; }
-  if(state.addresses.length === 0){ state.addresses = [{label:"宛先1", email:""}]; }
-  state.selectedAddr = state.addresses[0];
-  renderAddrButtons();
-}
-function saveAddresses(){
-  try{ localStorage.setItem('addresses', JSON.stringify(state.addresses)); }catch(e){}
-}
-function loadCc(){
-  try{
-    const v = localStorage.getItem('ccAddresses');
-    if(v){ state.ccAddresses = JSON.parse(v); }
-  }catch(e){ state.ccAddresses = []; }
-  renderCcButtons();
-}
-function saveCc(){
-  try{ localStorage.setItem('ccAddresses', JSON.stringify(state.ccAddresses)); }catch(e){}
-}
+/* ---- 保存 ---- */
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 
-/* ---------- エクスポート / インポート ---------- */
-function exportSettings(){
-  const data = {
-    version: 1,
-    name: state.name,
-    addresses: state.addresses,
-    ccAddresses: state.ccAddresses
-  };
-  document.getElementById('ioBox').value = JSON.stringify(data, null, 2);
-  alert('設定を書き出しました。下のテキストをコピーして保管してください。');
+function loadAll(){
+  const n = lsGet('userName');
+  if(n){ st.name = n; document.getElementById('nameInput').value = n; }
+  try{ const a = lsGet('addresses'); if(a) st.addresses = JSON.parse(a); }catch(e){}
+  if(!st.addresses.length) st.addresses = [{label:"宛先1", email:""}];
+  st.selAddr = st.addresses[0];
+  try{ const c = lsGet('ccAddresses'); if(c) st.ccAddresses = JSON.parse(c); }catch(e){}
+  renderTo(); renderCc();
 }
-function importSettings(){
-  const txt = document.getElementById('ioBox').value.trim();
-  if(!txt){ alert('先にバックアップしたテキストを貼り付けてください。'); return; }
-  let data;
-  try{ data = JSON.parse(txt); }
-  catch(e){ alert('テキストの形式が正しくありません。エクスポートした内容をそのまま貼り付けてください。'); return; }
-  if(!data || typeof data !== 'object'){ alert('読み込めませんでした。'); return; }
-  if(typeof data.name === 'string'){
-    state.name = data.name;
-    document.getElementById('nameInput').value = data.name;
-    try{ localStorage.setItem('userName', data.name); }catch(e){}
-  }
-  if(Array.isArray(data.addresses) && data.addresses.length){
-    state.addresses = data.addresses;
-    state.selectedAddr = state.addresses[0];
-    saveAddresses();
-    renderAddrButtons();
-  }
-  if(Array.isArray(data.ccAddresses)){
-    state.ccAddresses = data.ccAddresses;
-    state.selectedCc = [];
-    saveCc();
-    renderCcButtons();
-  }
-  updatePreview();
-  alert('設定を復元しました。');
-}
-function copyBox(){
-  const box = document.getElementById('ioBox');
-  if(!box.value.trim()){ alert('先に「エクスポート」を押してください。'); return; }
-  box.select();
-  try{
-    navigator.clipboard.writeText(box.value);
-    alert('コピーしました。メモアプリなどに貼り付けて保管してください。');
-  }catch(e){
-    document.execCommand('copy');
-    alert('コピーしました。');
-  }
-}
+function saveAddr(){ lsSet('addresses', JSON.stringify(st.addresses)); }
+function saveCc(){ lsSet('ccAddresses', JSON.stringify(st.ccAddresses)); }
 
-/* ---------- 宛先 ---------- */
-function renderAddrButtons(){
-  const wrap = document.getElementById('addrButtons');
-  wrap.innerHTML = '';
-  state.addresses.forEach((a)=>{
+/* ---- パネル ---- */
+function openPanel(){
+  document.getElementById('overlay').classList.remove('hide');
+  renderAddrManage(); renderCcManage();
+}
+function closePanel(){ document.getElementById('overlay').classList.add('hide'); }
+
+/* ---- 宛先（メイン画面の選択ボタン） ---- */
+function renderTo(){
+  const w = document.getElementById('toRow');
+  w.innerHTML = '';
+  st.addresses.forEach(a=>{
     const b = document.createElement('button');
-    b.className = 'choice-btn' + (state.selectedAddr === a ? ' selected' : '');
-    b.textContent = a.label + (a.email ? '' : '（未設定）');
-    b.onclick = ()=>{ state.selectedAddr = a; renderAddrButtons(); };
-    wrap.appendChild(b);
+    b.className = 'btn' + (st.selAddr === a ? ' sel' : '');
+    b.textContent = a.label + (a.email ? '' : '(未)');
+    b.onclick = ()=>{ st.selAddr = a; renderTo(); };
+    w.appendChild(b);
   });
-  updatePreview();
+  update();
 }
-function showAddAddr(){
-  const wrap = document.getElementById('addrManage');
-  wrap.innerHTML = '';
-  state.addresses.forEach((a, i)=>{
-    const row = document.createElement('div');
-    row.className = 'addr-row';
-    row.innerHTML =
-      '<input type="text" placeholder="名称（例：上司）" value="' + a.label.replace(/"/g,'&quot;') + '" data-idx="' + i + '" data-field="label">' +
-      '<input type="email" placeholder="メールアドレス" value="' + a.email.replace(/"/g,'&quot;') + '" data-idx="' + i + '" data-field="email">' +
-      '<button onclick="removeAddr(' + i + ')">削除</button>';
-    wrap.appendChild(row);
-  });
-  wrap.querySelectorAll('input').forEach(inp=>{
-    inp.addEventListener('input', (e)=>{
-      state.addresses[parseInt(e.target.dataset.idx)][e.target.dataset.field] = e.target.value;
-      saveAddresses();
-      renderAddrButtons();
-    });
-  });
-  const addBtn = document.createElement('button');
-  addBtn.className = 'add-addr-btn';
-  addBtn.textContent = '＋ もう一つ追加';
-  addBtn.onclick = ()=>{
-    state.addresses.push({label:"宛先"+(state.addresses.length+1), email:""});
-    saveAddresses(); showAddAddr(); renderAddrButtons();
-  };
-  wrap.appendChild(addBtn);
-}
-function removeAddr(idx){
-  state.addresses.splice(idx,1);
-  if(state.addresses.length===0){ state.addresses.push({label:"宛先1", email:""}); }
-  if(!state.addresses.includes(state.selectedAddr)){ state.selectedAddr = state.addresses[0]; }
-  saveAddresses(); showAddAddr(); renderAddrButtons();
-}
-
-/* ---------- CC ---------- */
-function renderCcButtons(){
-  const wrap = document.getElementById('ccButtons');
-  wrap.innerHTML = '';
-  if(state.ccAddresses.length === 0){
-    wrap.innerHTML = '<div style="color:var(--sub);font-size:13px;">登録されたCC宛先はありません</div>';
-    updatePreview();
-    return;
+function renderCc(){
+  const w = document.getElementById('ccRow');
+  w.innerHTML = '';
+  if(!st.ccAddresses.length){
+    w.innerHTML = '<span style="font-size:12px;color:var(--sub);">未登録</span>';
+    update(); return;
   }
-  state.ccAddresses.forEach((a)=>{
-    const isSelected = state.selectedCc.includes(a);
+  st.ccAddresses.forEach(a=>{
+    const on = st.selCc.includes(a);
     const b = document.createElement('button');
-    b.className = 'choice-btn' + (isSelected ? ' selected' : '');
-    b.textContent = a.label + (a.email ? '' : '（未設定）');
+    b.className = 'btn' + (on ? ' sel' : '');
+    b.textContent = a.label + (a.email ? '' : '(未)');
     b.onclick = ()=>{
-      if(isSelected){ state.selectedCc = state.selectedCc.filter(x=>x!==a); }
-      else { state.selectedCc.push(a); }
-      renderCcButtons();
+      if(on) st.selCc = st.selCc.filter(x=>x!==a); else st.selCc.push(a);
+      renderCc();
     };
-    wrap.appendChild(b);
+    w.appendChild(b);
   });
-  updatePreview();
-}
-function showAddCc(){
-  const wrap = document.getElementById('ccManage');
-  wrap.innerHTML = '';
-  state.ccAddresses.forEach((a, i)=>{
-    const row = document.createElement('div');
-    row.className = 'addr-row';
-    row.innerHTML =
-      '<input type="text" placeholder="名称（例：総務）" value="' + a.label.replace(/"/g,'&quot;') + '" data-idx="' + i + '" data-field="label">' +
-      '<input type="email" placeholder="メールアドレス" value="' + a.email.replace(/"/g,'&quot;') + '" data-idx="' + i + '" data-field="email">' +
-      '<button onclick="removeCc(' + i + ')">削除</button>';
-    wrap.appendChild(row);
-  });
-  wrap.querySelectorAll('input').forEach(inp=>{
-    inp.addEventListener('input', (e)=>{
-      state.ccAddresses[parseInt(e.target.dataset.idx)][e.target.dataset.field] = e.target.value;
-      saveCc(); renderCcButtons();
-    });
-  });
-  const addBtn = document.createElement('button');
-  addBtn.className = 'add-addr-btn';
-  addBtn.textContent = '＋ もう一つ追加';
-  addBtn.onclick = ()=>{
-    state.ccAddresses.push({label:"CC宛先"+(state.ccAddresses.length+1), email:""});
-    saveCc(); showAddCc(); renderCcButtons();
-  };
-  wrap.appendChild(addBtn);
-}
-function removeCc(idx){
-  const removed = state.ccAddresses[idx];
-  state.ccAddresses.splice(idx,1);
-  state.selectedCc = state.selectedCc.filter(x=>x!==removed);
-  saveCc(); showAddCc(); renderCcButtons();
+  update();
 }
 
-/* ---------- アドレス帳 ---------- */
-async function pickFromContacts(target){
+/* ---- 宛先編集（パネル内） ---- */
+function renderAddrManage(){
+  const w = document.getElementById('addrManage');
+  w.innerHTML = '';
+  st.addresses.forEach((a,i)=>{
+    const r = document.createElement('div');
+    r.className = 'addr-row';
+    r.innerHTML =
+      '<input type="text" placeholder="名称" value="'+a.label.replace(/"/g,'&quot;')+'" data-i="'+i+'" data-f="label">'+
+      '<input type="email" placeholder="メールアドレス" value="'+a.email.replace(/"/g,'&quot;')+'" data-i="'+i+'" data-f="email">'+
+      '<button onclick="delAddr('+i+')">×</button>';
+    w.appendChild(r);
+  });
+  w.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      st.addresses[+e.target.dataset.i][e.target.dataset.f] = e.target.value;
+      saveAddr(); renderTo();
+    });
+  });
+}
+function addAddr(){
+  st.addresses.push({label:"宛先"+(st.addresses.length+1), email:""});
+  saveAddr(); renderAddrManage(); renderTo();
+}
+function delAddr(i){
+  st.addresses.splice(i,1);
+  if(!st.addresses.length) st.addresses.push({label:"宛先1", email:""});
+  if(!st.addresses.includes(st.selAddr)) st.selAddr = st.addresses[0];
+  saveAddr(); renderAddrManage(); renderTo();
+}
+function renderCcManage(){
+  const w = document.getElementById('ccManage');
+  w.innerHTML = '';
+  st.ccAddresses.forEach((a,i)=>{
+    const r = document.createElement('div');
+    r.className = 'addr-row';
+    r.innerHTML =
+      '<input type="text" placeholder="名称" value="'+a.label.replace(/"/g,'&quot;')+'" data-i="'+i+'" data-f="label">'+
+      '<input type="email" placeholder="メールアドレス" value="'+a.email.replace(/"/g,'&quot;')+'" data-i="'+i+'" data-f="email">'+
+      '<button onclick="delCc('+i+')">×</button>';
+    w.appendChild(r);
+  });
+  w.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      st.ccAddresses[+e.target.dataset.i][e.target.dataset.f] = e.target.value;
+      saveCc(); renderCc();
+    });
+  });
+}
+function addCc(){
+  st.ccAddresses.push({label:"CC"+(st.ccAddresses.length+1), email:""});
+  saveCc(); renderCcManage(); renderCc();
+}
+function delCc(i){
+  const rm = st.ccAddresses[i];
+  st.ccAddresses.splice(i,1);
+  st.selCc = st.selCc.filter(x=>x!==rm);
+  saveCc(); renderCcManage(); renderCc();
+}
+
+/* ---- アドレス帳 ---- */
+async function pickContacts(target){
   if(!('contacts' in navigator) || !('ContactsManager' in window)){
-    alert('お使いのブラウザはアドレス帳の呼び出しに対応していません。手動で入力してください。');
+    alert('この端末・ブラウザではアドレス帳を呼び出せません。手動で入力してください。');
     return;
   }
   try{
-    const contacts = await navigator.contacts.select(['name','email'], {multiple: target === 'cc'});
-    if(!contacts || contacts.length === 0) return;
-    contacts.forEach(c=>{
+    const cs = await navigator.contacts.select(['name','email'], {multiple: target==='cc'});
+    if(!cs || !cs.length) return;
+    cs.forEach(c=>{
       const label = (c.name && c.name[0]) ? c.name[0] : 'アドレス帳';
       const email = (c.email && c.email[0]) ? c.email[0] : '';
       if(!email) return;
-      if(target === 'to'){
-        state.addresses.push({label, email});
-        saveAddresses(); showAddAddr(); renderAddrButtons();
-      } else {
-        const entry = {label, email};
-        state.ccAddresses.push(entry);
-        state.selectedCc.push(entry);
-        saveCc(); showAddCc(); renderCcButtons();
-      }
+      if(target==='to'){ st.addresses.push({label,email}); }
+      else { st.ccAddresses.push({label,email}); }
     });
+    if(target==='to'){ saveAddr(); renderAddrManage(); renderTo(); }
+    else { saveCc(); renderCcManage(); renderCc(); }
   }catch(e){
-    alert('アドレス帳の読み込みに失敗しました。手動で入力してください。');
+    alert('アドレス帳の読み込みに失敗しました。');
   }
 }
 
-/* ---------- 選択 ---------- */
-function selectType(t){
-  state.type = t;
-  document.querySelectorAll('[data-type]').forEach(b=>{
-    b.classList.toggle('selected', b.dataset.type === t);
+/* ---- バックアップ ---- */
+function doExport(){
+  document.getElementById('ioBox').value = JSON.stringify({
+    version:1, name:st.name, addresses:st.addresses, ccAddresses:st.ccAddresses
   });
-  document.getElementById('timeSection').classList.toggle('hidden', t !== '遅刻');
-  document.getElementById('eventSection').classList.toggle('hidden', t !== '欠席');
-  updatePreview();
+  alert('書き出しました。下のテキストをコピーして保管してください。');
 }
-function selectReason(r){
-  state.reason = r;
-  document.querySelectorAll('[data-reason]').forEach(b=>{
-    b.classList.toggle('selected', b.dataset.reason === r);
-  });
-  updatePreview();
-}
-function selectApology(v){
-  state.apology = v;
-  document.querySelectorAll('[data-apology]').forEach(b=>{
-    b.classList.toggle('selected', b.dataset.apology === v);
-  });
-  updatePreview();
-}
-function toggleOther(){
-  document.getElementById('otherReasons').classList.toggle('hidden');
-}
-
-/* ---------- 時刻プルダウン ---------- */
-function buildTimeSelects(){
-  const hs = document.getElementById('hourSelect');
-  hs.innerHTML = '<option value="">--</option>';
-  for(let h=0; h<24; h++){
-    const o = document.createElement('option');
-    o.value = h; o.textContent = h + '時';
-    hs.appendChild(o);
+function doImport(){
+  const t = document.getElementById('ioBox').value.trim();
+  if(!t){ alert('バックアップしたテキストを貼り付けてください。'); return; }
+  let d;
+  try{ d = JSON.parse(t); }catch(e){ alert('形式が正しくありません。'); return; }
+  if(typeof d.name === 'string'){
+    st.name = d.name;
+    document.getElementById('nameInput').value = d.name;
+    lsSet('userName', d.name);
   }
-  hs.addEventListener('change', e=>{ state.hour = e.target.value; updatePreview(); });
+  if(Array.isArray(d.addresses) && d.addresses.length){
+    st.addresses = d.addresses; st.selAddr = st.addresses[0]; saveAddr();
+  }
+  if(Array.isArray(d.ccAddresses)){
+    st.ccAddresses = d.ccAddresses; st.selCc = []; saveCc();
+  }
+  renderAddrManage(); renderCcManage(); renderTo(); renderCc();
+  alert('復元しました。');
+}
+function copyBox(){
+  const b = document.getElementById('ioBox');
+  if(!b.value.trim()){ alert('先に「エクスポート」を押してください。'); return; }
+  b.select();
+  try{ navigator.clipboard.writeText(b.value); }catch(e){ document.execCommand('copy'); }
+  alert('コピーしました。');
+}
 
-  const ms = document.getElementById('minSelect');
-  ms.innerHTML = '<option value="">--</option>';
-  [0,15,30,45].forEach(m=>{
-    const o = document.createElement('option');
-    o.value = m; o.textContent = String(m).padStart(2,'0') + '分';
-    ms.appendChild(o);
+/* ---- 選択 ---- */
+function selType(t){
+  st.type = t;
+  document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('sel', b.dataset.type===t));
+  document.getElementById('timeCard').classList.toggle('hide', t!=='遅刻');
+  document.getElementById('eventCard').classList.toggle('hide', t!=='欠席');
+  update();
+}
+function selReason(r){
+  st.reason = r;
+  document.querySelectorAll('[data-reason]').forEach(b=>b.classList.toggle('sel', b.dataset.reason===r));
+  update();
+}
+function selApo(v){
+  st.apo = v;
+  document.querySelectorAll('[data-apo]').forEach(b=>b.classList.toggle('sel', b.dataset.apo===v));
+  update();
+}
+
+/* ---- 時刻 ---- */
+function buildTime(){
+  const h = document.getElementById('hourSel');
+  h.innerHTML = '<option value="">--</option>';
+  for(let i=0;i<24;i++){
+    const o=document.createElement('option'); o.value=i; o.textContent=i+'時'; h.appendChild(o);
+  }
+  h.onchange = e=>{ st.hour = e.target.value; update(); };
+  const m = document.getElementById('minSel');
+  m.innerHTML = '<option value="">--</option>';
+  [0,15,30,45].forEach(v=>{
+    const o=document.createElement('option'); o.value=v; o.textContent=String(v).padStart(2,'0')+'分'; m.appendChild(o);
   });
-  ms.addEventListener('change', e=>{ state.minute = e.target.value; updatePreview(); });
+  m.onchange = e=>{ st.minute = e.target.value; update(); };
 }
 function timeStr(){
-  if(state.hour === '' || state.minute === '') return null;
-  return state.hour + ':' + String(state.minute).padStart(2,'0');
+  if(st.hour===''||st.minute==='') return null;
+  return st.hour + ':' + String(st.minute).padStart(2,'0');
 }
 
-/* ---------- 本文生成 ---------- */
-function buildBody(){
+/* ---- 本文 ---- */
+function body(){
   const t = timeStr();
-  const greeting = 'お疲れさまです。' + (state.name ? state.name : '〇〇') + 'です。';
-  const apologyLine = state.apology === 'あり' ? '\nご迷惑をおかけし申し訳ございません。' : '';
-  const r = state.reason;
-  let main;
-
-  if(state.type === '遅刻'){
-    const timePart = t ? t + '頃' : '追ってご連絡する時刻';
-    main = (r === '理由なし')
-      ? '本日、' + timePart + 'に出社いたします。'
-      : '本日、' + r + 'のため' + timePart + 'に出社いたします。';
-  } else if(state.type === '欠勤'){
-    main = (r === '理由なし')
-      ? '本日、お休みをいただきます。'
-      : '本日、' + r + 'のためお休みをいただきます。';
+  const g = 'お疲れさまです。' + (st.name || '〇〇') + 'です。';
+  const ap = st.apo==='あり' ? '\nご迷惑をおかけし申し訳ございません。' : '';
+  const r = st.reason;
+  let m;
+  if(st.type==='遅刻'){
+    const tp = t ? t+'頃' : '追ってご連絡する時刻';
+    m = (r==='理由なし') ? '本日、'+tp+'に出社いたします。' : '本日、'+r+'のため'+tp+'に出社いたします。';
+  } else if(st.type==='欠勤'){
+    m = (r==='理由なし') ? '本日、お休みをいただきます。' : '本日、'+r+'のためお休みをいただきます。';
   } else {
-    const ev = state.event ? state.event : '本日の会議';
-    main = (r === '理由なし')
-      ? ev + 'を欠席させていただきます。'
-      : r + 'のため、' + ev + 'を欠席させていただきます。';
+    const ev = st.event || '本日の会議';
+    m = (r==='理由なし') ? ev+'を欠席させていただきます。' : r+'のため、'+ev+'を欠席させていただきます。';
   }
-  return greeting + '\n' + main + apologyLine + '\nよろしくお願いいたします。';
+  return g+'\n'+m+ap+'\nよろしくお願いいたします。';
 }
-function buildSubject(){
-  if(state.type === '遅刻') return '遅刻のご連絡';
-  if(state.type === '欠勤') return '欠勤のご連絡';
-  return '欠席のご連絡';
+function subject(){
+  return st.type==='遅刻' ? '遅刻のご連絡' : (st.type==='欠勤' ? '欠勤のご連絡' : '欠席のご連絡');
 }
-
-/* ---------- プレビュー ---------- */
-function updatePreview(){
-  const addr = state.selectedAddr ? (state.selectedAddr.email || '（未設定）') : '（未設定）';
-  const ccList = state.selectedCc.map(c=>c.email).filter(Boolean).join(', ');
+function update(){
+  const to = st.selAddr ? (st.selAddr.email || '（未設定）') : '（未設定）';
+  const cc = st.selCc.map(c=>c.email).filter(Boolean).join(', ');
   document.getElementById('preview').innerHTML =
-    '<b>宛先：</b>' + addr + '\n<b>CC：</b>' + (ccList || '（なし）') +
-    '\n<b>件名：</b>' + buildSubject() + '\n\n' + buildBody();
+    '<b>宛先：</b>'+to+'　<b>CC：</b>'+(cc||'なし')+'\n<b>件名：</b>'+subject()+'\n\n'+body();
 }
 
-/* ---------- 送信 ---------- */
+/* ---- 送信 ---- */
 function sendMail(){
-  const addr = state.selectedAddr ? state.selectedAddr.email : '';
-  if(!addr){
-    alert('宛先メールアドレスが未設定です。「宛先を追加・編集」から設定してください。');
-    showAddAddr();
-    return;
-  }
-  if(state.type === '遅刻' && (state.hour === '' || state.minute === '')){
-    alert('出社予定時刻を選択してください。');
-    return;
-  }
-  const subject = encodeURIComponent(buildSubject());
-  const body = encodeURIComponent(buildBody());
-  const ccList = state.selectedCc.map(c=>c.email).filter(Boolean);
-  const ccParam = ccList.length ? '&cc=' + encodeURIComponent(ccList.join(',')) : '';
-  window.location.href = 'mailto:' + encodeURIComponent(addr) + '?subject=' + subject + ccParam + '&body=' + body;
+  const to = st.selAddr ? st.selAddr.email : '';
+  if(!to){ alert('宛先が未設定です。右上の⋯から登録してください。'); openPanel(); return; }
+  if(st.type==='遅刻' && (st.hour===''||st.minute==='')){ alert('出社予定時刻を選択してください。'); return; }
+  const cc = st.selCc.map(c=>c.email).filter(Boolean);
+  const ccP = cc.length ? '&cc='+encodeURIComponent(cc.join(',')) : '';
+  window.location.href = 'mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subject())+ccP+'&body='+encodeURIComponent(body());
 }
 
-/* ---------- 起動 ---------- */
-buildTimeSelects();
-loadAddresses();
-loadCc();
-loadName();
-document.getElementById('nameInput').addEventListener('input', e=>{ saveName(e.target.value); });
-document.getElementById('eventInput').addEventListener('input', e=>{ state.event = e.target.value; updatePreview(); });
-updatePreview();
+/* ---- 起動 ---- */
+buildTime();
+loadAll();
+document.getElementById('nameInput').addEventListener('input', e=>{
+  st.name = e.target.value; lsSet('userName', e.target.value); update();
+});
+document.getElementById('eventInput').addEventListener('input', e=>{
+  st.event = e.target.value; update();
+});
+update();
 </script>
 
 </body>
