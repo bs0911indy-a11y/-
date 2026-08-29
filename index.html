@@ -13,7 +13,7 @@
   *{box-sizing:border-box;}
   body{
     margin:0; font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
-    background:var(--bg); color:var(--text); padding:10px 12px 84px;
+    background:var(--bg); color:var(--text); padding:10px 12px 142px;
   }
   .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
   .topbar h1{font-size:17px;margin:0;}
@@ -94,6 +94,13 @@
     flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--accent);
     background:#fff;color:var(--accent);font-size:13px;font-weight:600;
   }
+  .line-row{display:flex;gap:8px;margin-top:8px;}
+  .line-btn{
+    flex:1;padding:13px 6px;border:none;border-radius:12px;
+    background:#06c755;color:#fff;font-size:14px;font-weight:700;
+  }
+  .line-btn.sub{background:#fff;color:#06c755;border:1.5px solid #06c755;}
+  .line-btn:active{opacity:.8;}
 </style>
 </head>
 <body>
@@ -159,6 +166,10 @@
 
 <div class="sendbar">
   <button class="send" onclick="sendMail()">この内容でメールを開く</button>
+  <div class="line-row">
+    <button class="line-btn sub" onclick="copyBody()">本文をコピー</button>
+    <button class="line-btn" onclick="sendLine()">LINEで送る</button>
+  </div>
 </div>
 
 <div class="overlay hide" id="overlay" onclick="if(event.target===this)closePanel()">
@@ -600,6 +611,37 @@ function sendMail(){
   const cc = st.selCc.map(c=>c.email).filter(Boolean);
   const ccP = cc.length ? '&cc='+encodeURIComponent(cc.join(',')) : '';
   window.location.href = 'mailto:'+encodeURIComponent(tl.join(','))+'?subject='+encodeURIComponent(subject())+ccP+'&body='+encodeURIComponent(body());
+}
+
+/* ---- LINE ---- */
+function copyBody(){
+  const t = body();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(
+      ()=>alert('本文をコピーしました。LINEを開いてトークに貼り付けてください。'),
+      ()=>fallbackCopy(t)
+    );
+  } else {
+    fallbackCopy(t);
+  }
+}
+function fallbackCopy(t){
+  const ta = document.createElement('textarea');
+  ta.value = t;
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try{ document.execCommand('copy'); alert('本文をコピーしました。LINEを開いてトークに貼り付けてください。'); }
+  catch(e){ alert('コピーできませんでした。プレビューの文章を手動で選択してコピーしてください。'); }
+  document.body.removeChild(ta);
+}
+function sendLine(){
+  if(st.type==='遅刻' && (st.hour===''||st.minute==='')){ alert('出社予定時刻を選択してください。'); return; }
+  const t = body();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).catch(()=>{});
+  }
+  window.location.href = 'https://line.me/R/share?text=' + encodeURIComponent(t);
 }
 
 /* ---- 起動 ---- */
