@@ -45,9 +45,23 @@
   .colon{font-size:18px;font-weight:700;color:var(--accent-dark);}
   .preview{
     background:#fafbfc;border:1px solid var(--border);border-radius:10px;
-    padding:10px;font-size:12.5px;color:var(--sub);white-space:pre-wrap;line-height:1.55;
+    padding:8px 10px;font-size:12px;color:var(--sub);white-space:pre-wrap;line-height:1.5;
+    margin-bottom:6px;
   }
   .preview b{color:var(--text);}
+  #bodyBox{
+    width:100%;min-height:120px;padding:10px;border-radius:10px;
+    border:1.5px solid var(--border);font-size:13.5px;line-height:1.6;
+    font-family:inherit;color:var(--text);background:#fff;resize:vertical;
+  }
+  .edit-note{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:11px;color:var(--sub);margin-top:5px;
+  }
+  .reset-btn{
+    border:1.5px solid var(--border);background:#fff;color:var(--sub);
+    border-radius:7px;padding:5px 10px;font-size:11.5px;
+  }
   .sendbar{
     position:fixed;bottom:0;left:0;right:0;
     padding:10px 12px calc(10px + env(safe-area-inset-bottom));
@@ -133,6 +147,8 @@
 </div>
 
 <div class="card" id="timeCard">
+  <div class="lbl">予定（任意）</div>
+  <select id="planSel" style="width:100%;margin-bottom:9px;"></select>
   <div class="lbl">出社予定時刻</div>
   <div class="time-row">
     <select id="hourSel"></select>
@@ -162,6 +178,11 @@
 
 <div class="card">
   <div class="preview" id="preview"></div>
+  <textarea id="bodyBox" placeholder="本文"></textarea>
+  <div class="edit-note">
+    <span id="editState">自動生成中（直接編集できます）</span>
+    <button class="reset-btn" onclick="resetBody()">自動生成に戻す</button>
+  </div>
 </div>
 
 <div class="sendbar">
@@ -198,6 +219,12 @@
     </div>
 
     <div class="card">
+      <div class="lbl">予定の選択肢</div>
+      <div id="planManage"></div>
+      <button class="dash" onclick="addPlan()">＋ 項目を追加</button>
+    </div>
+
+    <div class="card">
       <div class="lbl">CC宛先</div>
       <div id="ccManage"></div>
       <button class="dash" onclick="addCc()">＋ CC宛先を追加</button>
@@ -221,8 +248,11 @@ let st = {
   type:"遅刻", reason:"理由なし", hour:"", minute:"",
   addresses:[], selTo:[], groups:[], selGroups:[],
   ccAddresses:[], selCc:[],
-  name:"", event:"", apo:"あり"
+  name:"", event:"", apo:"あり",
+  plan:"", plans:[], bodyEdited:false,
+  warnMail:false, warnLine:false
 };
+const DEFAULT_PLANS = ['ミーティング','朝礼','定例会議','研修','打ち合わせ'];
 
 /* ---- 保存 ---- */
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
@@ -230,6 +260,7 @@ function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 function saveAddr(){ lsSet('addresses', JSON.stringify(st.addresses)); }
 function saveCc(){ lsSet('ccAddresses', JSON.stringify(st.ccAddresses)); }
 function saveGroups(){ lsSet('groups', JSON.stringify(st.groups)); }
+function savePlans(){ lsSet('plans', JSON.stringify(st.plans)); }
 
 function loadAll(){
   const n = lsGet('userName');
@@ -239,13 +270,16 @@ function loadAll(){
   st.selTo = [st.addresses[0]];
   try{ const c = lsGet('ccAddresses'); if(c) st.ccAddresses = JSON.parse(c); }catch(e){}
   try{ const g = lsGet('groups'); if(g) st.groups = JSON.parse(g); }catch(e){}
+  try{ const pl = lsGet('plans'); if(pl) st.plans = JSON.parse(pl); }catch(e){}
+  if(!Array.isArray(st.plans) || !st.plans.length) st.plans = DEFAULT_PLANS.slice();
+  buildPlanSelect();
   renderTo(); renderCc();
 }
 
 /* ---- パネル ---- */
 function openPanel(){
   document.getElementById('overlay').classList.remove('hide');
-  renderAddrManage(); renderCcManage(); renderGroupManage();
+  renderAddrManage(); renderCcManage(); renderGroupManage(); renderPlanManage();
 }
 function closePanel(){ document.getElementById('overlay').classList.add('hide'); }
 
@@ -511,7 +545,7 @@ function doImport(){
   if(Array.isArray(d.ccAddresses)){
     st.ccAddresses = d.ccAddresses; st.selCc = []; saveCc();
   }
-  renderAddrManage(); renderCcManage(); renderGroupManage(); renderTo(); renderCc();
+  renderAddrManage(); renderCcManage(); renderGroupManage(); renderPlanManage(); renderTo(); renderCc();
   alert('復元しました。');
 }
 function copyBox(){
@@ -528,6 +562,7 @@ function selType(t){
   document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('sel', b.dataset.type===t));
   document.getElementById('timeCard').classList.toggle('hide', t!=='遅刻');
   document.getElementById('eventCard').classList.toggle('hide', t!=='欠席');
+  resetWarn();
   update();
 }
 function selReason(r){
@@ -541,6 +576,49 @@ function selApo(v){
   update();
 }
 
+/* ---- 予定 ---- */
+function buildPlanSelect(){
+  const sel = document.getElementById('planSel');
+  const cur = st.plan;
+  sel.innerHTML = '<option value="">（指定なし）</option>';
+  st.plans.forEach(p=>{
+    const o = document.createElement('option');
+    o.value = p; o.textContent = p;
+    sel.appendChild(o);
+  });
+  sel.value = st.plans.includes(cur) ? cur : '';
+  st.plan = sel.value;
+  sel.onchange = e=>{ st.plan = e.target.value; resetWarn(); update(); };
+}
+function renderPlanManage(){
+  const w = document.getElementById('planManage');
+  w.innerHTML = '';
+  if(!st.plans.length){
+    w.innerHTML = '<div style="font-size:12px;color:var(--sub);">項目がありません。</div>';
+    return;
+  }
+  st.plans.forEach((p,i)=>{
+    const r = document.createElement('div');
+    r.className = 'addr-row';
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.value = p;
+    inp.addEventListener('input', e=>{
+      st.plans[i] = e.target.value; savePlans(); buildPlanSelect();
+    });
+    const x = document.createElement('button');
+    x.className = 'xbtn'; x.textContent = '✕';
+    x.onclick = ()=>{ st.plans.splice(i,1); savePlans(); renderPlanManage(); buildPlanSelect(); update(); };
+    r.appendChild(inp); r.appendChild(x);
+    w.appendChild(r);
+  });
+}
+function addPlan(){
+  const v = prompt('追加する項目名を入力してください（例：面談）');
+  if(!v) return;
+  st.plans.push(v.trim());
+  savePlans(); renderPlanManage(); buildPlanSelect();
+}
+
 /* ---- 時刻 ---- */
 function buildTime(){
   const h = document.getElementById('hourSel');
@@ -548,14 +626,16 @@ function buildTime(){
   for(let i=0;i<24;i++){
     const o=document.createElement('option'); o.value=i; o.textContent=i+'時'; h.appendChild(o);
   }
-  h.onchange = e=>{ st.hour = e.target.value; update(); };
+  h.onchange = e=>{ st.hour = e.target.value; resetWarn(); update(); };
   const m = document.getElementById('minSel');
   m.innerHTML = '<option value="">--</option>';
   [0,15,30,45].forEach(v=>{
     const o=document.createElement('option'); o.value=v; o.textContent=String(v).padStart(2,'0')+'分'; m.appendChild(o);
   });
-  m.onchange = e=>{ st.minute = e.target.value; update(); };
+  m.onchange = e=>{ st.minute = e.target.value; resetWarn(); update(); };
 }
+function resetWarn(){ st.warnMail = false; st.warnLine = false; }
+
 function timeStr(){
   if(st.hour===''||st.minute==='') return null;
   return st.hour + ':' + String(st.minute).padStart(2,'0');
@@ -579,8 +659,14 @@ function body(){
   const r = st.reason;
   let m;
   if(st.type==='遅刻'){
-    const tp = t ? t+'頃' : '追ってご連絡する時刻';
-    m = (r==='理由なし') ? '本日、'+tp+'に出社いたします。' : '本日、'+r+'のため'+tp+'に出社いたします。';
+    const pl = st.plan ? st.plan + '、' : '';
+    if(t){
+      m = (r==='理由なし') ? '本日、'+pl+t+'頃に出社いたします。' : '本日、'+r+'のため'+pl+t+'頃に出社いたします。';
+    } else {
+      m = (r==='理由なし')
+        ? '本日、遅れて出社いたします。出社時刻は追ってご連絡いたします。'
+        : '本日、'+r+'のため遅れて出社いたします。出社時刻は追ってご連絡いたします。';
+    }
   } else if(st.type==='欠勤'){
     m = (r==='理由なし') ? '本日、お休みをいただきます。' : '本日、'+r+'のためお休みをいただきます。';
   } else {
@@ -592,6 +678,16 @@ function body(){
 function subject(){
   return st.type==='遅刻' ? '遅刻のご連絡' : (st.type==='欠勤' ? '欠勤のご連絡' : '欠席のご連絡');
 }
+function currentBody(){
+  const box = document.getElementById('bodyBox');
+  return (st.bodyEdited && box.value.trim()) ? box.value : body();
+}
+function resetBody(){
+  st.bodyEdited = false;
+  document.getElementById('bodyBox').value = body();
+  document.getElementById('editState').textContent = '自動生成中（直接編集できます）';
+}
+
 function update(){
   const tl = toEmails();
   let to;
@@ -600,22 +696,29 @@ function update(){
   else to = tl.slice(0,2).join(', ') + ' ほか' + (tl.length-2) + '名（計' + tl.length + '名）';
   const cc = st.selCc.map(c=>c.email).filter(Boolean).join(', ');
   document.getElementById('preview').innerHTML =
-    '<b>宛先：</b>'+to+'\n<b>CC：</b>'+(cc||'なし')+'\n<b>件名：</b>'+subject()+'\n\n'+body();
+    '<b>宛先：</b>'+to+'\n<b>CC：</b>'+(cc||'なし')+'\n<b>件名：</b>'+subject();
+  if(!st.bodyEdited){
+    document.getElementById('bodyBox').value = body();
+  }
 }
 
 /* ---- 送信 ---- */
 function sendMail(){
   const tl = toEmails();
   if(!tl.length){ alert('宛先が選択されていません。右上の⋯から登録し、宛先またはグループを選んでください。'); openPanel(); return; }
-  if(st.type==='遅刻' && (st.hour===''||st.minute==='')){ alert('出社予定時刻を選択してください。'); return; }
+  if(st.type==='遅刻' && (st.hour===''||st.minute==='') && !st.warnMail){
+    st.warnMail = true;
+    alert('出社予定時刻が未選択です。\n\nこのまま送る場合は、もう一度ボタンを押してください。\n（「出社時刻は追ってご連絡いたします」という文面になります）');
+    return;
+  }
   const cc = st.selCc.map(c=>c.email).filter(Boolean);
   const ccP = cc.length ? '&cc='+encodeURIComponent(cc.join(',')) : '';
-  window.location.href = 'mailto:'+encodeURIComponent(tl.join(','))+'?subject='+encodeURIComponent(subject())+ccP+'&body='+encodeURIComponent(body());
+  window.location.href = 'mailto:'+encodeURIComponent(tl.join(','))+'?subject='+encodeURIComponent(subject())+ccP+'&body='+encodeURIComponent(currentBody());
 }
 
 /* ---- LINE ---- */
 function copyBody(){
-  const t = body();
+  const t = currentBody();
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(t).then(
       ()=>alert('本文をコピーしました。LINEを開いてトークに貼り付けてください。'),
@@ -636,8 +739,12 @@ function fallbackCopy(t){
   document.body.removeChild(ta);
 }
 function sendLine(){
-  if(st.type==='遅刻' && (st.hour===''||st.minute==='')){ alert('出社予定時刻を選択してください。'); return; }
-  const t = body();
+  if(st.type==='遅刻' && (st.hour===''||st.minute==='') && !st.warnLine){
+    st.warnLine = true;
+    alert('出社予定時刻が未選択です。\n\nこのまま送る場合は、もう一度ボタンを押してください。\n（「出社時刻は追ってご連絡いたします」という文面になります）');
+    return;
+  }
+  const t = currentBody();
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(t).catch(()=>{});
   }
@@ -652,6 +759,10 @@ document.getElementById('nameInput').addEventListener('input', e=>{
 });
 document.getElementById('eventInput').addEventListener('input', e=>{
   st.event = e.target.value; update();
+});
+document.getElementById('bodyBox').addEventListener('input', ()=>{
+  st.bodyEdited = true;
+  document.getElementById('editState').textContent = '✏️ 編集済み（この内容で送信されます）';
 });
 update();
 </script>
